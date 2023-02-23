@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane prefHeight="721.0" prefWidth="1140.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grice.c195.controllers.ReportsController">
+   <Rectangle arcHeight="5.0" arcWidth="5.0" fill="#c11fff" height="90.0" layoutX="112.0" layoutY="145.0" opacity="0.31" stroke="BLACK" strokeType="INSIDE" width="916.0" />
+    <Label layoutX="504.0" layoutY="37.0" text="Reports">
+        <font>
+          <Font name="System Bold" size="36.0" />
+        </font>
+    </Label>
+    <AnchorPane layoutX="104.0" layoutY="110.0" prefHeight="501.0" prefWidth="933.0">
+        <TabPane layoutX="8.0" layoutY="6.0" prefHeight="488.0" prefWidth="916.0" tabClosingPolicy="UNAVAILABLE">
+            <Tab text="Appointments">
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="480.0" prefWidth="916.0">
+               <Rectangle arcHeight="5.0" arcWidth="5.0" fill="#c11fff" height="116.0" layoutX="-7.0" layoutY="-8.0" opacity="0.31" stroke="BLACK" strokeType="INSIDE" width="927.0" />
+                    <TableView fx:id="filterTable" layoutY="87.0" prefHeight="375.0" prefWidth="916.0">
+                        <columns>
+                            <TableColumn fx:id="reportsAppointmentsIdColumn" prefWidth="75.0" text="ID" />
+                            <TableColumn fx:id="reportAppointmentsTypeColumn" prefWidth="75.0" text="Type" />
+                            <TableColumn fx:id="reportAppointmentsTitleColumn" prefWidth="114.0" text="Title" />
+                            <TableColumn fx:id="reportAppointmentsDescriptionColumn" prefWidth="108.0" text="Description" />
+                            <TableColumn fx:id="reportAppointmentsContactColumn" prefWidth="77.0" text="Contact" />
+                            <TableColumn fx:id="reportAppointmentsLocationColumn" prefWidth="99.0" text="Location" />
+                            <TableColumn fx:id="reportAppointmentsStartColumn" prefWidth="127.0" text="Start" />
+                            <TableColumn fx:id="reportAppointmentsEndColumn" prefWidth="152.0" text="End" />
+                            <TableColumn fx:id="reportAppointmentsCustIDColumn" prefWidth="51.0" text="Cust. ID" />
+                            <TableColumn fx:id="reportAppointmentsUserColumn" prefWidth="37.0" text="User ID" />
+                        </columns>
+                    </TableView>
+                    <ComboBox fx:id="appMonthFilterCombo" layoutX="15.0" layoutY="42.0" onAction="#appFilter" prefWidth="150.0" />
+                    <Label layoutX="16.0" layoutY="23.0" prefHeight="17.0" prefWidth="120.0" text="Month">
+                        <font>
+                            <Font size="14.0" />
+                        </font>
+                    </Label>
+                    <ComboBox fx:id="appTypeFilterCombo" layoutX="191.0" layoutY="42.0" onAction="#appFilter" prefWidth="150.0" />
+                    <Label layoutX="192.0" layoutY="23.0" prefHeight="17.0" prefWidth="120.0" text="Type">
+                        <font>
+                            <Font size="14.0" />
+                        </font>
+                    </Label>
+               <Label fx:id="reportsAppointmentsCountLabel" layoutX="16.0" layoutY="4.0" prefHeight="20.0" prefWidth="216.0">
+                  <font>
+                     <Font name="System Bold" size="14.0" />
+                  </font>
+               </Label>
+               <Label layoutX="435.0" layoutY="33.0" prefHeight="20.0" prefWidth="383.0" text="Appointment Totals: Select Month or Day or Both">
+                  <font>
+                     <Font size="14.0" />
+                  </font>
+               </Label>
+                </AnchorPane>
+            </Tab>
+            <Tab text="Schedule">
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+               <Rectangle arcHeight="5.0" arcWidth="5.0" fill="#c11fff" height="90.0" layoutY="-3.0" opacity="0.31" stroke="BLACK" strokeType="INSIDE" width="916.0" />
+                    <ComboBox fx:id="contactFilterCombo" layoutX="15.0" layoutY="42.0" onAction="#contactFilter" prefWidth="150.0" />
+                    <Label layoutX="16.0" layoutY="23.0" prefHeight="17.0" prefWidth="120.0" text="Contact">
+                        <font>
+                            <Font size="14.0" />
+                        </font>
+                    </Label>
+                    <TableView fx:id="scheduleTable" layoutY="87.0" prefHeight="375.0" prefWidth="916.0">
+                        <columns>
+                            <TableColumn fx:id="reportsScheduleIdColumn" prefWidth="75.0" text="ID" />
+                            <TableColumn fx:id="reportsScheduleTypeColumn" prefWidth="75.0" text="Type" />
+                            <TableColumn fx:id="reportsScheduleTitleColumn" prefWidth="114.0" text="Title" />
+                            <TableColumn fx:id="reportsScheduleDescriptionColumn" prefWidth="108.0" text="Description" />
+                            <TableColumn fx:id="reportsScheduleContactColumn" prefWidth="77.0" text="Contact" />
+                            <TableColumn fx:id="reportsScheduleLocationColumn" prefWidth="99.0" text="Location" />
+                            <TableColumn fx:id="reportsScheduleStartColumn" prefWidth="127.0" text="Start" />
+                            <TableColumn fx:id="reportsScheduleEndColumn" prefWidth="152.0" text="End" />
+                            <TableColumn fx:id="reportsScheduleCustIDColumn" prefWidth="51.0" text="Cust. ID" />
+                            <TableColumn fx:id="reportsScheduleUserColumn" prefWidth="37.0" text="User ID" />
+                        </columns>
+                    </TableView>
+               <Label fx:id="reportScheduleCountLabel" layoutX="16.0" layoutY="4.0" prefHeight="20.0" prefWidth="222.0" text="Appointments Count:">
+                  <font>
+                     <Font size="14.0" />
+                  </font>
+               </Label>
+               <Label layoutX="435.0" layoutY="33.0" prefHeight="20.0" prefWidth="414.0" text="Contacts Schedule: Select a Contact to see thier schedule.">
+                  <font>
+                     <Font size="14.0" />
+                  </font>
+               </Label>
+                </AnchorPane>
+            </Tab>
+            <Tab text="Billing">
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                    <ComboBox fx:id="billingFilterCombo" layoutX="15.0" layoutY="42.0" onAction="#billingFilter" prefWidth="150.0" />
+                    <Label layoutX="16.0" layoutY="23.0" prefHeight="17.0" prefWidth="120.0" text="Time Period">
+                        <font>
+                            <Font size="14.0" />
+                        </font>
+                    </Label>
+                    <TableView fx:id="billingTable" editable="true" layoutY="87.0" prefHeight="375.0" prefWidth="916.0">
+                        <columns>
+                            <TableColumn fx:id="reportsBillingIdColumn" prefWidth="75.0" text="ID" />
+                            <TableColumn fx:id="reportsBillingTypeColumn" prefWidth="75.0" text="Type" />
+                            <TableColumn fx:id="reportsBillingTitleColumn" prefWidth="114.0" text="Title" />
+                            <TableColumn fx:id="reportsBillingDescriptionColumn" prefWidth="108.0" text="Description" />
+                            <TableColumn fx:id="reportsBillingContactColumn" prefWidth="77.0" text="Contact" />
+                            <TableColumn fx:id="reportsBillingLocationColumn" prefWidth="99.0" text="Location" />
+                            <TableColumn fx:id="reportsBillingStartColumn" prefWidth="127.0" text="Start" />
+                            <TableColumn fx:id="reportsBillingEndColumn" prefWidth="152.0" text="End" />
+                            <TableColumn fx:id="reportsBillingCustIDColumn" prefWidth="51.0" text="Cust. ID" />
+                            <TableColumn fx:id="reportsBillingUserColumn" prefWidth="37.0" text="User ID" />
+                        </columns>
+                    </TableView>
+               <Label fx:id="reportsBillingHoursLabel" layoutX="16.0" layoutY="4.0" prefHeight="20.0" prefWidth="208.0" text="Hours:">
+                  <font>
+                     <Font size="14.0" />
+                  </font>
+               </Label>
+               <Label layoutX="435.0" layoutY="33.0" prefHeight="20.0" prefWidth="444.0" text="Billing Reports: Select a period to see total minutes">
+                  <font>
+                     <Font size="14.0" />
+                  </font>
+               </Label>
+                </AnchorPane>
+            </Tab>
+        </TabPane>
+    </AnchorPane>
+    <Button layoutX="951.0" layoutY="51.0" mnemonicParsing="false" onAction="#mainMenuClick" text="Main Menu" />
+</AnchorPane>

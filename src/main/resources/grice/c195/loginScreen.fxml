@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+            prefHeight="300.0" prefWidth="475.0" xmlns="http://javafx.com/javafx/17.0.2-ea"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="grice.c195.controllers.MainController">
+   <Button fx:id="mainLoginBtn" layoutX="115.0" layoutY="200.0" mnemonicParsing="false" onAction="#loginClick"
+           prefHeight="33.0" prefWidth="106.0" text="Login">
+      <font>
+         <Font size="14.0"/>
+      </font>
+   </Button>
+   <Label fx:id="mainUsernameLabel" layoutX="115.0" layoutY="63.0" prefHeight="33.0" prefWidth="146.0" text="Username"
+          textAlignment="RIGHT">
+      <font>
+         <Font size="14.0"/>
+      </font>
+   </Label>
+   <Label fx:id="mainPasswordLabel" layoutX="115.0" layoutY="129.0" prefHeight="24.0" prefWidth="146.0" text="Password"
+          textAlignment="RIGHT">
+      <font>
+         <Font size="14.0"/>
+      </font>
+   </Label>
+   <TextField fx:id="mainUsernameInput" layoutX="115.0" layoutY="96.0" prefHeight="33.0" prefWidth="236.0"/>
+   <Label fx:id="mainLoginWarningLabel" layoutX="120.0" layoutY="39.0" prefHeight="24.0" prefWidth="236.0"
+          textFill="#f50000">
+      <font>
+         <Font name="System Bold" size="14.0"/>
+      </font>
+   </Label>
+   <PasswordField fx:id="mainPasswordInput" layoutX="115.0" layoutY="156.0" prefHeight="33.0" prefWidth="236.0"/>
+   <Label fx:id="mainZoneIdLabel" layoutX="14.0" layoutY="269.0" prefHeight="17.0" prefWidth="191.0" text="TimeZone:">
+      <font>
+         <Font name="System Italic" size="14.0"/>
+      </font>
+   </Label>
+</AnchorPane>
