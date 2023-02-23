@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"m":"grice.c195","l":"grice.c195"},{"m":"grice.c195","l":"grice.c195.controllers"},{"m":"grice.c195","l":"grice.c195.DAO"},{"m":"grice.c195","l":"grice.c195.helper"},{"m":"grice.c195","l":"grice.c195.model"}];updateSearchResults();
