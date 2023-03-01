@@ -1,6 +1,7 @@
 package grice.c195.DAO;
 
 import grice.c195.helper.JDBC;
+import grice.c195.helper.TimeConverter;
 import grice.c195.model.Appointment;
 import grice.c195.model.Contact;
 import grice.c195.model.Customer;
@@ -11,76 +12,18 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.sql.*;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Data Access Object for the appointments table.
+ * Data Access Object for the appointments database table.
  */
 public class AppointmentsDAO {
     /**
-     * Retrieves all appointments from the database and returns them as an observable list.
-     * @param timeFrame String of either "all", "week", or "month".
-     * @return appointmentList ObservableList<Appointment> of all appointments.
-     */
-    public static ObservableList<Appointment> getAppointments(String timeFrame) {
-        ObservableList<Appointment> appointmentList = FXCollections.observableArrayList();
-        String query = switch (timeFrame) {
-            case "all" ->
-                    "SELECT a.Appointment_ID, a.Title, a.Description, a.Type, c.Contact_Name,  a.Location, a.Start, a.End, a.Customer_ID, a.User_ID " +
-                            "FROM appointments a " +
-                            "JOIN contacts c ON a.Contact_ID = c.Contact_ID;";
-            case "week" ->
-                    "SELECT a.Appointment_ID, a.Title, a.Description, a.Type, c.Contact_Name,  a.Location, a.Start, a.End, a.Customer_ID, a.User_ID " +
-                            "FROM appointments a " +
-                            "JOIN contacts c ON a.Contact_ID = c.Contact_ID " +
-                            "WHERE a.Start BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 7 DAY);";
-            case "month" ->
-                    "SELECT a.Appointment_ID, a.Title, a.Description, a.Type, c.Contact_Name,  a.Location, a.Start, a.End, a.Customer_ID, a.User_ID " +
-                            "FROM appointments a " +
-                            "JOIN contacts c ON a.Contact_ID = c.Contact_ID " +
-                            "WHERE a.Start BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 1 MONTH);";
-            default -> "";
-        };
-
-        try {
-            JDBC.openConnection();
-            PreparedStatement ps = JDBC.connection.prepareStatement(query);
-            ResultSet resultSet = ps.executeQuery();
-
-            while (resultSet.next()) {
-                Appointment appointment = new Appointment(
-                        resultSet.getInt("Appointment_ID"),
-                        resultSet.getString("Title"),
-                        resultSet.getString("Description"),
-                        resultSet.getString("Type"),
-                        resultSet.getString("Contact_Name"),
-                        resultSet.getString("Location"),
-                        resultSet.getTimestamp("Start"),
-                        resultSet.getTimestamp("End"),
-                        resultSet.getInt("Customer_ID"),
-                        resultSet.getInt("User_ID"));
-                appointmentList.add(appointment);
-            }
-
-            JDBC.closeConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return appointmentList;
-    }
-    /**
-     * Returns a list of all Contact names in the contacts database table.
+     * Adds an appointment to the database.
      * @param UserId The ID of the user currently logged in.
      * @param appCustomerIDCombo The ComboBox containing the customer ID.
      * @param appContactCombo The ComboBox containing the contact name.
@@ -88,64 +31,33 @@ public class AppointmentsDAO {
      * @param appDescriptionField The TextField containing the appointment description.
      * @param appTypeField The TextField containing the appointment type.
      * @param appLocationField The TextField containing the appointment location.
-     * @param appStartDatePicker The DatePicker containing the appointment start date.
-     * @param appEndDatePicker The DatePicker containing the appointment end date.
      * @param appStartTimeField The TextField containing the appointment start time.
      * @param appEndTimeField The TextField containing the appointment end time.
      */
     public static void addAppointment(int UserId, ComboBox<String> appCustomerIDCombo, ComboBox<String> appContactCombo, TextField appTitleField,
                                       TextField appDescriptionField, TextField appTypeField, TextField appLocationField,
-                                      DatePicker appStartDatePicker, DatePicker appEndDatePicker,
-                                      TextField appStartTimeField, TextField appEndTimeField) {
-
-        if (appCustomerIDCombo.getValue() == null || appContactCombo.getValue().isEmpty() || appTitleField.getText().isEmpty() ||
-                appDescriptionField.getText().isEmpty() || appTypeField.getText().isEmpty() || appLocationField.getText().isEmpty() ||
-                appStartDatePicker.getValue() == null || appEndDatePicker.getValue() == null || appStartTimeField.getText().isEmpty() ||
-                appEndTimeField.getText().isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Please fill out all required fields.");
-            alert.showAndWait();
-            return;
-        }
+                                      LocalDateTime appStartTimeField, LocalDateTime appEndTimeField) {
 
         try {
-            String startTime = timeConverter(appStartDatePicker.getValue() + " " + appStartTimeField.getText()).toString();
-            String endTime = timeConverter(appEndDatePicker.getValue() + " " + appEndTimeField.getText()).toString();
-
             JDBC.openConnection();
             PreparedStatement statement = JDBC.connection.prepareStatement("INSERT INTO appointments (Customer_ID, Contact_ID, " +
                     "Title, Description, Type, Location, Start, End, User_ID) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            Timestamp startTime = Timestamp.valueOf(TimeConverter.localToUtc(appStartTimeField));
+            Timestamp endTime = Timestamp.valueOf(TimeConverter.localToUtc(appEndTimeField));
             statement.setInt(1, Integer.parseInt(appCustomerIDCombo.getValue()));
             statement.setInt(2, Contact.getContactIdByName(appContactCombo.getValue()));
             statement.setString(3, appTitleField.getText());
             statement.setString(4, appDescriptionField.getText());
             statement.setString(5, appTypeField.getText());
             statement.setString(6, appLocationField.getText());
-            statement.setString(7, startTime);
-            statement.setString(8, endTime);
+            statement.setTimestamp(7, startTime);
+            statement.setTimestamp(8, endTime);
             statement.setInt(9, UserId);
             statement.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Converts a time from local time to UTC time.
-     * @param time The time to convert.
-     * @return The converted time.
-     */
-    private static LocalDateTime timeConverter(String time) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        LocalDateTime startDateTime = LocalDateTime.parse(time, formatter);
-        ZoneId localZoneId = ZoneId.systemDefault();
-
-        ZonedDateTime localZonedDateTime = ZonedDateTime.of(startDateTime, localZoneId);
-        ZoneId utcZoneId = ZoneId.of("UTC");
-        ZonedDateTime utcZonedDateTime = localZonedDateTime.withZoneSameInstant(utcZoneId);
-        return utcZonedDateTime.toLocalDateTime();
     }
     /**
      * Updates an appointment in the database.
@@ -218,6 +130,42 @@ public class AppointmentsDAO {
         }
     }
     /**
+     * Retrieves all appointments from the database and returns them as an observable list.
+     * @return appointmentList ObservableList<Appointment> of all appointments.
+     */
+    public static ObservableList<Appointment> getAppointments() {
+        ObservableList<Appointment> appointmentList = FXCollections.observableArrayList();
+        String query =  "SELECT a.Appointment_ID, a.Title, a.Description, a.Type, c.Contact_Name,  a.Location, a.Start, a.End, a.Customer_ID, a.User_ID " +
+                        "FROM appointments a " +
+                        "JOIN contacts c ON a.Contact_ID = c.Contact_ID;";
+
+        try {
+            JDBC.openConnection();
+            PreparedStatement ps = JDBC.connection.prepareStatement(query);
+            ResultSet resultSet = ps.executeQuery();
+
+            while (resultSet.next()) {
+                Appointment appointment = new Appointment(
+                        resultSet.getInt("Appointment_ID"),
+                        resultSet.getString("Title"),
+                        resultSet.getString("Description"),
+                        resultSet.getString("Type"),
+                        resultSet.getString("Contact_Name"),
+                        resultSet.getString("Location"),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("Start").toLocalDateTime()),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("End").toLocalDateTime()),
+                        resultSet.getInt("Customer_ID"),
+                        resultSet.getInt("User_ID"));
+                appointmentList.add(appointment);
+            }
+
+            JDBC.closeConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return appointmentList;
+    }
+    /**
      * This method returns a list of appointments by month.
      * @param selectedCustomer The selected customer.
      * @return appointments The list of appointments.
@@ -237,8 +185,8 @@ public class AppointmentsDAO {
                         resultSet.getString("Type"),
                         Contact.getContactNameById(resultSet.getInt("Contact_ID")),
                         resultSet.getString("Location"),
-                        resultSet.getTimestamp("Start"),
-                        resultSet.getTimestamp("End"),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("Start").toLocalDateTime()),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("End").toLocalDateTime()),
                         resultSet.getInt("Customer_ID"),
                         resultSet.getInt("User_ID"));
                 appointments.add(appointment);
@@ -372,8 +320,8 @@ public class AppointmentsDAO {
                         resultSet.getString("Type"),
                         Contact.getContactNameById(resultSet.getInt("Contact_ID")),
                         resultSet.getString("Location"),
-                        resultSet.getTimestamp("Start"),
-                        resultSet.getTimestamp("End"),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("Start").toLocalDateTime()),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("End").toLocalDateTime()),
                         resultSet.getInt("Customer_ID"),
                         resultSet.getInt("User_ID"));
                 appointments.add(appointment);
@@ -406,8 +354,8 @@ public class AppointmentsDAO {
                         resultSet.getString("Type"),
                         Contact.getContactNameById(resultSet.getInt("Contact_ID")),
                         resultSet.getString("Location"),
-                        resultSet.getTimestamp("Start"),
-                        resultSet.getTimestamp("End"),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("Start").toLocalDateTime()),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("End").toLocalDateTime()),
                         resultSet.getInt("Customer_ID"),
                         resultSet.getInt("User_ID"));
                 appointments.add(appointment);
@@ -456,8 +404,8 @@ public class AppointmentsDAO {
                         resultSet.getString("Type"),
                         Contact.getContactNameById(resultSet.getInt("Contact_ID")),
                         resultSet.getString("Location"),
-                        resultSet.getTimestamp("Start"),
-                        resultSet.getTimestamp("End"),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("Start").toLocalDateTime()),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("End").toLocalDateTime()),
                         resultSet.getInt("Customer_ID"),
                         resultSet.getInt("User_ID"));
                 appointments.add(appointment);
@@ -490,73 +438,11 @@ public class AppointmentsDAO {
                         resultSet.getString("Type"),
                         Contact.getContactNameById(resultSet.getInt("Contact_ID")),
                         resultSet.getString("Location"),
-                        resultSet.getTimestamp("Start"),
-                        resultSet.getTimestamp("End"),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("Start").toLocalDateTime()),
+                        TimeConverter.utcToLocal(resultSet.getTimestamp("End").toLocalDateTime()),
                         resultSet.getInt("Customer_ID"),
                         resultSet.getInt("User_ID"));
                 appointments.add(appointment);
-            }
-            JDBC.closeConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return appointments;
-    }
-    /**
-     * This method returns an observable list of all appointments from the database based on the passed in string.  The
-     * String can be "All Time", "Week", "Month", "Quarter", "Year", or "Last Year".
-     * @param selectedTimeFrame The selected time frame.
-     * @return Returns an observable list of all appointments from the database based on the passed in string.
-     */
-    public static ObservableList<Appointment> getAppointmentsTimeFrame(String selectedTimeFrame) {
-        ObservableList<Appointment> appointments = FXCollections.observableArrayList();
-        try {
-            JDBC.openConnection();
-            PreparedStatement statement = null;
-            switch (selectedTimeFrame) {
-                case "All Time" -> statement = JDBC.connection.prepareStatement("SELECT * FROM appointments");
-                case "Week" -> {
-                    statement = JDBC.connection.prepareStatement("SELECT * FROM appointments WHERE Start BETWEEN ? AND ?");
-                    statement.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now().minusDays(7)));
-                    statement.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
-                }
-                case "Month" -> {
-                    statement = JDBC.connection.prepareStatement("SELECT * FROM appointments WHERE Start BETWEEN ? AND ?");
-                    statement.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now().withDayOfMonth(1)));
-                    statement.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
-                }
-                case "Quarter" -> {
-                    statement = JDBC.connection.prepareStatement("SELECT * FROM appointments WHERE Start BETWEEN ? AND ?");
-                    statement.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now().minusMonths(3)));
-                    statement.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
-                }
-                case "Year" -> {
-                    statement = JDBC.connection.prepareStatement("SELECT * FROM appointments WHERE Start BETWEEN ? AND ?");
-                    statement.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now().withDayOfYear(1)));
-                    statement.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
-                }
-                case "Last Year" -> {
-                    statement = JDBC.connection.prepareStatement("SELECT * FROM appointments WHERE Start BETWEEN ? AND ?");
-                    statement.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now().minusYears(1).withDayOfYear(1)));
-                    statement.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now().minusYears(1).withDayOfYear(365)));
-                }
-            }
-            if (statement != null) {
-                ResultSet resultSet = statement.executeQuery();
-                while (resultSet.next()) {
-                    Appointment appointment = new Appointment(
-                            resultSet.getInt("Appointment_ID"),
-                            resultSet.getString("Title"),
-                            resultSet.getString("Description"),
-                            resultSet.getString("Type"),
-                            Contact.getContactNameById(resultSet.getInt("Contact_ID")),
-                            resultSet.getString("Location"),
-                            resultSet.getTimestamp("Start"),
-                            resultSet.getTimestamp("End"),
-                            resultSet.getInt("Customer_ID"),
-                            resultSet.getInt("User_ID"));
-                    appointments.add(appointment);
-                }
             }
             JDBC.closeConnection();
         } catch (SQLException e) {

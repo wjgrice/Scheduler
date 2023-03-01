@@ -16,8 +16,13 @@ import javafx.scene.control.TableView;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Date;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ResourceBundle;
+import java.util.function.Predicate;
+
 /**
  * Controller for the Reports screen.
  */
@@ -29,8 +34,8 @@ public class ReportsController implements Initializable {
     @FXML private TableColumn<Appointment, String> reportAppointmentsDescriptionColumn;
     @FXML private TableColumn<Appointment, String> reportAppointmentsContactColumn;
     @FXML private TableColumn<Appointment, String> reportAppointmentsLocationColumn;
-    @FXML private TableColumn<Appointment, Date> reportAppointmentsStartColumn;
-    @FXML private TableColumn<Appointment, Date> reportAppointmentsEndColumn;
+    @FXML private TableColumn<Appointment, String> reportAppointmentsStartColumn;
+    @FXML private TableColumn<Appointment, String> reportAppointmentsEndColumn;
     @FXML private TableColumn<Appointment, Integer> reportAppointmentsCustIDColumn;
     @FXML private TableColumn<Appointment, Integer> reportAppointmentsUserColumn;
     @FXML private TableView<Appointment> scheduleTable;
@@ -40,8 +45,8 @@ public class ReportsController implements Initializable {
     @FXML private TableColumn<Appointment, String> reportsScheduleDescriptionColumn;
     @FXML private TableColumn<Appointment, String> reportsScheduleContactColumn;
     @FXML private TableColumn<Appointment, String> reportsScheduleLocationColumn;
-    @FXML private TableColumn<Appointment, Date> reportsScheduleStartColumn;
-    @FXML private TableColumn<Appointment, Date> reportsScheduleEndColumn;
+    @FXML private TableColumn<Appointment, String> reportsScheduleStartColumn;
+    @FXML private TableColumn<Appointment, String> reportsScheduleEndColumn;
     @FXML private TableColumn<Appointment, Integer> reportsScheduleCustIDColumn;
     @FXML private TableColumn<Appointment, Integer> reportsScheduleUserColumn;
     @FXML private TableView<Appointment> billingTable;
@@ -51,8 +56,8 @@ public class ReportsController implements Initializable {
     @FXML private TableColumn<Appointment, String> reportsBillingDescriptionColumn;
     @FXML private TableColumn<Appointment, String> reportsBillingContactColumn;
     @FXML private TableColumn<Appointment, String> reportsBillingLocationColumn;
-    @FXML private TableColumn<Appointment, Date> reportsBillingStartColumn;
-    @FXML private TableColumn<Appointment, Date> reportsBillingEndColumn;
+    @FXML private TableColumn<Appointment, String> reportsBillingStartColumn;
+    @FXML private TableColumn<Appointment, String> reportsBillingEndColumn;
     @FXML private TableColumn<Appointment, Integer> reportsBillingCustIDColumn;
     @FXML private TableColumn<Appointment, Integer> reportsBillingUserColumn;
     @FXML private ComboBox<String> appTypeFilterCombo;
@@ -89,7 +94,7 @@ public class ReportsController implements Initializable {
         // Set Default value to "All" for billing types
         billingFilterCombo.setValue("All");
 
-        ObservableList<Appointment> appointments = AppointmentsDAO.getAppointments("all");
+        ObservableList<Appointment> appointments = AppointmentsDAO.getAppointments();
         // Update the appointments table with all appointments
         TableUpdater.appsTableUpdate(filterTable, reportsAppointmentsIdColumn, reportAppointmentsUserColumn,
                 reportAppointmentsCustIDColumn, reportAppointmentsTypeColumn, reportAppointmentsTitleColumn,
@@ -110,8 +115,11 @@ public class ReportsController implements Initializable {
         reportScheduleCountLabel.setText("Appointment Count: " + scheduleTable.getItems().size());
         //Display count of appointments in schedule table
         reportScheduleCountLabel.setText("Appointment Count: " + scheduleTable.getItems().size());
+        //Display count of appointments.  If no appointments then display 0
+        appFilter();
         //Display count of minutes of appointments in billing table
         billingFilter();
+
 
     }
     /**
@@ -124,7 +132,7 @@ public class ReportsController implements Initializable {
 
         //Create cell factory for filterTable using returned list of appointments
         if (selectedMonth.equals("All") && selectedType.equals("All")) {
-            filterTable.setItems(AppointmentsDAO.getAppointments("all"));
+            filterTable.setItems(AppointmentsDAO.getAppointments());
         } else if (!selectedMonth.equals("All") && selectedType.equals("All")) {
             filterTable.setItems(AppointmentsDAO.getAppointmentsByMonth(selectedMonth));
         } else if (selectedMonth.equals("All")) {
@@ -142,7 +150,7 @@ public class ReportsController implements Initializable {
     public void contactFilter() {
         String selectedContact = contactFilterCombo.getSelectionModel().getSelectedItem();
         if (selectedContact.equals("All")) {
-            scheduleTable.setItems(AppointmentsDAO.getAppointments("all"));
+            scheduleTable.setItems(AppointmentsDAO.getAppointments());
         } else {
             scheduleTable.setItems(AppointmentsDAO.getAppointmentsByContact(selectedContact) );
         }
@@ -154,12 +162,56 @@ public class ReportsController implements Initializable {
      * Filters the billing table by the selected billing time period.  If "All" is selected then no filter is applied.
      */
     public void billingFilter() {
+        ObservableList<Appointment> appointments = AppointmentsDAO.getAppointments();
         String selectedFilter = billingFilterCombo.getSelectionModel().getSelectedItem();
-        if (selectedFilter.equals("All")) {
-            billingTable.setItems(AppointmentsDAO.getAppointments("all"));
-        } else {
-            billingTable.setItems(AppointmentsDAO.getAppointmentsTimeFrame(selectedFilter));
+        LocalDate now = LocalDate.now();
+        Predicate<Appointment> filterPredicate = null;
+        switch (selectedFilter) {
+            case "All" -> filterPredicate = appointment -> true;
+            case "Week" -> {
+                // Filter List to current week
+                LocalDate startOfWeek = now.with(DayOfWeek.SUNDAY);
+                LocalDate endOfWeek = now.with(DayOfWeek.SATURDAY);
+                filterPredicate = appointment -> {
+                    LocalDateTime startTime = appointment.getStart();
+                    LocalDate startDate = startTime.toLocalDate();
+                    return startDate.isEqual(startOfWeek) || (startDate.isAfter(startOfWeek) && startDate.isBefore(endOfWeek));
+                };
+            }
+            case "Month" -> {
+                // Filter List to current month
+                LocalDate startOfMonth = now.withDayOfMonth(1);
+                LocalDate endOfMonth = now.withDayOfMonth(now.lengthOfMonth());
+                filterPredicate = appointment -> {
+                    LocalDateTime startTime = appointment.getStart();
+                    LocalDate startDate = startTime.toLocalDate();
+                    return startDate.isEqual(startOfMonth) || (startDate.isAfter(startOfMonth) && startDate.isBefore(endOfMonth));
+                };
+            }
+            case "Quarter" -> {
+                // Filter List to current quarter
+                Month currentMonth = now.getMonth();
+                int currentQuarter = (currentMonth.getValue() / 3) + 1;
+                LocalDate quarterStart = LocalDate.of(now.getYear(), ((currentQuarter - 1) * 3) + 1, 1);
+                LocalDate quarterEnd = quarterStart.plusMonths(3).minusDays(1);
+                filterPredicate = appointment -> {
+                    LocalDateTime startTime = appointment.getStart();
+                    LocalDate startDate = startTime.toLocalDate();
+                    return startDate.isEqual(quarterStart) || (startDate.isAfter(quarterStart) && startDate.isBefore(quarterEnd));
+                };
+            }
+            case "Year" -> {
+                // Filter List to current year
+                LocalDate startOfYear = LocalDate.of(now.getYear(), Month.JANUARY, 1);
+                LocalDate endOfYear = LocalDate.of(now.getYear(), Month.DECEMBER, 31);
+                filterPredicate = appointment -> {
+                    LocalDateTime startTime = appointment.getStart();
+                    LocalDate startDate = startTime.toLocalDate();
+                    return startDate.isEqual(startOfYear) || (startDate.isAfter(startOfYear) && startDate.isBefore(endOfYear));
+                };
+            }
         }
+        billingTable.setItems(appointments.filtered(filterPredicate));
         //Count of appointments in billing table
         reportsBillingHoursLabel.setText("Appointment Count: " + billingTable.getItems().size());
         //Calculate the total hours of appointments in billing table

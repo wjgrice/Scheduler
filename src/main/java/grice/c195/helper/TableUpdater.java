@@ -9,7 +9,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.time.ZoneId;
-import java.util.Date;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 /**
  * Class used to update table views with data
  */
@@ -44,12 +45,12 @@ public class TableUpdater {
                                        TableColumn<Appointment, String> locationColumn,
                                        TableColumn<Appointment, String> contactColumn,
                                        TableColumn<Appointment, String> typeColumn,
-                                       TableColumn<Appointment, Date> startColumn,
-                                       TableColumn<Appointment, Date> endColumn,
+                                       TableColumn<Appointment, String> startColumn,
+                                       TableColumn<Appointment, String> endColumn,
                                        ObservableList<Appointment> appList) {
+
         // Set the appointment data as the items in the table
         table.setItems(appList);
-
         // Set the cell value factories for each column to the appropriate appointment property
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
         userColumn.setCellValueFactory(new PropertyValueFactory<>("userId"));
@@ -60,18 +61,18 @@ public class TableUpdater {
         contactColumn.setCellValueFactory(new PropertyValueFactory<>("contact"));
         typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
 
-        // LAMBDA: Set the start time column to display the local start time of the appointment as a Date
+        // LAMBDA: Set the start time column to display the local start time of the appointment as a STRING with format "MM/dd/yyyy HH:mm"
         startColumn.setCellValueFactory(cellData -> {
-            SimpleObjectProperty<Date> dateProp = new SimpleObjectProperty<>();
-            dateProp.setValue(Date.from(cellData.getValue().getLocalStartTime().atZone(ZoneId.systemDefault()).toInstant()));
-            return dateProp;
+            ZonedDateTime zonedDate = cellData.getValue().getStart().atZone(ZoneId.systemDefault());
+            String formattedDateTime = zonedDate.format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm"));
+            return new SimpleObjectProperty<>(formattedDateTime);
         });
 
-        // LAMBDA: Set the end time column to display the local end time of the appointment as a Date
+        // LAMBDA: Set the end time column to display the local end time of the appointment as a STRING with format "MM/dd/yyyy HH:mm"
         endColumn.setCellValueFactory(cellData -> {
-            SimpleObjectProperty<Date> dateProp = new SimpleObjectProperty<>();
-            dateProp.setValue(Date.from(cellData.getValue().getLocalEndTime().atZone(ZoneId.systemDefault()).toInstant()));
-            return dateProp;
+            ZonedDateTime zonedDate = cellData.getValue().getEnd().atZone(ZoneId.systemDefault());
+            String formattedDateTime = zonedDate.format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm"));
+            return new SimpleObjectProperty<>(formattedDateTime);
         });
     }
     /**

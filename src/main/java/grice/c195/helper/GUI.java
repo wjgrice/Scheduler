@@ -52,10 +52,10 @@ public  class GUI {
             appDescriptionField.setText(selectedAppointment.getDescription());
             appTypeField.setText(selectedAppointment.getType());
             appLocationField.setText(selectedAppointment.getLocation());
-            appStartDatePicker.setValue(selectedAppointment.getLocalStartTime().toLocalDate());
-            appEndDatePicker.setValue(selectedAppointment.getLocalEndTime().toLocalDate());
-            appStartTimeField.setText(selectedAppointment.getLocalStartTime().toLocalTime().toString());
-            appEndTimeField.setText(selectedAppointment.getLocalEndTime().toLocalTime().toString());
+            appStartDatePicker.setValue(selectedAppointment.getStart().toLocalDate());
+            appEndDatePicker.setValue(selectedAppointment.getEnd().toLocalDate());
+            appStartTimeField.setText(selectedAppointment.getStart().toLocalTime().toString());
+            appEndTimeField.setText(selectedAppointment.getEnd().toLocalTime().toString());
         }
     }
 

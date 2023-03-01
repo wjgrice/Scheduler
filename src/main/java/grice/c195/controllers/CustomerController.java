@@ -3,13 +3,9 @@ package grice.c195.controllers;
 import grice.c195.DAO.AppointmentsDAO;
 import grice.c195.DAO.ComboBoxDAO;
 import grice.c195.DAO.CustomerDAO;
-import grice.c195.helper.AppointmentCheck;
-import grice.c195.helper.GUI;
-import grice.c195.helper.InputValidation;
-import grice.c195.helper.ScreenChange;
+import grice.c195.helper.*;
 import grice.c195.model.Appointment;
 import grice.c195.model.Customer;
-import grice.c195.helper.TableUpdater;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -19,12 +15,11 @@ import javafx.scene.control.*;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ResourceBundle;
+import java.util.function.Predicate;
 
 public class CustomerController implements Initializable {
     private static int userId; // Stores the user id of the logged-in user
@@ -45,8 +40,8 @@ public class CustomerController implements Initializable {
     @FXML private TableColumn<Appointment, String> appAllLocationColumn; // Reference to all appointments location column
     @FXML private TableColumn<Appointment, String> appAllContactColumn; // Reference to all appointments contact column
     @FXML private TableColumn<Appointment, String> appAllTypeColumn; // Reference to all appointments type column
-    @FXML private TableColumn<Appointment, Date> appAllStartColumn; // Reference to all appointments start column
-    @FXML private TableColumn<Appointment, Date> appAllEndColumn; // Reference to all appointments end column
+    @FXML private TableColumn<Appointment, String> appAllStartColumn; // Reference to all appointments start column
+    @FXML private TableColumn<Appointment, String> appAllEndColumn; // Reference to all appointments end column
     @FXML private TableView<Appointment> appWeeklyTable; // Reference to weekly appointments table
     @FXML private TableColumn<Appointment, Integer> appWeeklyIdColumn; // Reference to weekly appointments id column
     @FXML private TableColumn<Appointment, Integer> appWeeklyUserIdColumn; // Reference to weekly appointments user id column
@@ -56,8 +51,8 @@ public class CustomerController implements Initializable {
     @FXML private TableColumn<Appointment, String> appWeeklyLocationColumn; // Reference to weekly appointments location column
     @FXML private TableColumn<Appointment, String> appWeeklyContactColumn; // Reference to weekly appointments contact column
     @FXML private TableColumn<Appointment, String> appWeeklyTypeColumn; // Reference to weekly appointments type column
-    @FXML private TableColumn<Appointment, Date> appWeeklyStartColumn; // Reference to weekly appointments start column
-    @FXML private TableColumn<Appointment, Date> appWeeklyEndColumn; // Reference to weekly appointments end column
+    @FXML private TableColumn<Appointment, String> appWeeklyStartColumn; // Reference to weekly appointments start column
+    @FXML private TableColumn<Appointment, String> appWeeklyEndColumn; // Reference to weekly appointments end column
     @FXML private TableView<Appointment> appMonthlyTable; // Reference to monthly appointments table
     @FXML private TableColumn<Appointment, Integer> appMonthlyIdColumn; // Reference to monthly appointments id column
     @FXML private TableColumn<Appointment, Integer> appMonthlyUserIdColumn; // Reference to monthly appointments user id column
@@ -67,8 +62,8 @@ public class CustomerController implements Initializable {
     @FXML private TableColumn<Appointment, String> appMonthlyLocationColumn; // Reference to monthly appointments location column
     @FXML private TableColumn<Appointment, String> appMonthlyContactColumn; // Reference to monthly appointments contact column
     @FXML private TableColumn<Appointment, String> appMonthlyTypeColumn; // Reference to monthly appointments type column
-    @FXML private TableColumn<Appointment, Date> appMonthlyStartColumn; // Reference to monthly appointments start column
-    @FXML private TableColumn<Appointment, Date> appMonthlyEndColumn; // Reference to monthly appointments end column
+    @FXML private TableColumn<Appointment, String> appMonthlyStartColumn; // Reference to monthly appointments start column
+    @FXML private TableColumn<Appointment, String> appMonthlyEndColumn; // Reference to monthly appointments end column
     @FXML private TableColumn<Customer, Integer> customerIDColumn; // Reference to customer id column
     @FXML private TableColumn<Customer, String> customerNameColumn; // Reference to customer name column
     @FXML private TableColumn<Customer, String> customerAddressColumn; // Reference to customer address column
@@ -100,7 +95,12 @@ public class CustomerController implements Initializable {
         updateAppsWeekly();
         updateAppsMonthly();
         listenForTableSelections();
-        AppointmentCheck.checkForAppointments(appNotesArea);
+        if(AppointmentCheck.checkForAppointments(appNotesArea)){
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Appointment Alert");
+            alert.setHeaderText("You have an appointment within 15 minutes!");
+            alert.showAndWait();
+        }
     }
     /**
      * Adds listeners to the all tables to load the selected appointment or customer into the appointment or customer
@@ -142,7 +142,8 @@ public class CustomerController implements Initializable {
         });
     }
 
-    /** Passes the user form Customer related fields and Tableview to the GUI class to update the customerClientTable
+    /**
+     * Passes the user form Customer related fields and Tableview to the GUI class to update the customerClientTable
      * and saves the fields to the appropriate database table database when the save button is clicked.
      * @throws SQLException if there is an error with the database
      */
@@ -261,7 +262,7 @@ public class CustomerController implements Initializable {
      * Updates the ALL version of appointment table view
      */
     public void updateAppsAll() {
-        ObservableList<Appointment> appList = AppointmentsDAO.getAppointments("all");
+        ObservableList<Appointment> appList = AppointmentsDAO.getAppointments();
         TableUpdater.appsTableUpdate(appAllTable, appAllIdColumn, appAllUserColumn, appAllCustomerIdColumn, appAllTitleColumn,
                         appAllDescriptionColumn, appAllLocationColumn, appAllContactColumn, appAllTypeColumn,
                         appAllStartColumn, appAllEndColumn, appList);
@@ -271,19 +272,51 @@ public class CustomerController implements Initializable {
      * Updates the WEEKLY version appointment table view
      */
     public void updateAppsWeekly() {
-        ObservableList<Appointment> appList = AppointmentsDAO.getAppointments("week");
+        // Get the current week's Sunday and Saturday dates
+        LocalDate today = LocalDate.now();
+        LocalDate sunday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+        LocalDate saturday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
+
+        // Define a predicate to check if an appointment occurs within the current week
+        Predicate<Appointment> isInCurrentWeek = appointment -> {
+            LocalDateTime startTime = appointment.getStart();
+            LocalDate startDate = startTime.toLocalDate();
+            return startDate.isEqual(sunday) || (startDate.isAfter(sunday) && startDate.isBefore(saturday));
+        };
+
+        // Apply the filter to the appList
+        ObservableList<Appointment> appList = AppointmentsDAO.getAppointments();
+        ObservableList<Appointment> filteredAppList = appList.filtered(isInCurrentWeek);
+
+        // Update the appointment table view with the filtered list
         TableUpdater.appsTableUpdate(appWeeklyTable, appWeeklyIdColumn, appWeeklyUserIdColumn, appWeeklyCustomerIdColumn,
-                        appWeeklyTitleColumn, appWeeklyDescriptionColumn, appWeeklyLocationColumn, appWeeklyContactColumn,
-                        appWeeklyTypeColumn, appWeeklyStartColumn, appWeeklyEndColumn, appList);
+                appWeeklyTitleColumn, appWeeklyDescriptionColumn, appWeeklyLocationColumn, appWeeklyContactColumn,
+                appWeeklyTypeColumn, appWeeklyStartColumn, appWeeklyEndColumn, filteredAppList);
     }
+
+
     /**
      * Updates the MONTHLY version appointment table view
      */
     public void updateAppsMonthly() {
-        ObservableList<Appointment> appList = AppointmentsDAO.getAppointments("month");
+        // Get the current month and year
+        Month currentMonth = LocalDate.now().getMonth();
+        int currentYear = LocalDate.now().getYear();
+
+        // Create a predicate to filter appointments by month and year
+        Predicate<Appointment> isInCurrentMonth = appointment -> {
+            LocalDateTime startTime = appointment.getStart();
+            return startTime.getMonth() == currentMonth && startTime.getYear() == currentYear;
+        };
+
+        // Filter the list of appointments
+        ObservableList<Appointment> appList = AppointmentsDAO.getAppointments();
+        ObservableList<Appointment> filteredAppList = appList.filtered(isInCurrentMonth);
+
+        // Update the table view
         TableUpdater.appsTableUpdate(appMonthlyTable, appMonthlyIdColumn, appMonthlyUserIdColumn, appMonthlyCustomerIdColumn,
-                        appMonthlyTitleColumn, appMonthlyDescriptionColumn, appMonthlyLocationColumn, appMonthlyContactColumn,
-                        appMonthlyTypeColumn, appMonthlyStartColumn, appMonthlyEndColumn, appList);
+                appMonthlyTitleColumn, appMonthlyDescriptionColumn, appMonthlyLocationColumn, appMonthlyContactColumn,
+                appMonthlyTypeColumn, appMonthlyStartColumn, appMonthlyEndColumn, filteredAppList);
     }
 
     /**
@@ -291,12 +324,29 @@ public class CustomerController implements Initializable {
      * Updates the table views with the new appointment.
      */
     public void appSave() {
-
+        // Check if all fields have data
+        if (appCustomerIdCombo.getValue() == null || appContactCombo.getValue().isEmpty() || appTitleField.getText().isEmpty() ||
+                appDescriptionField.getText().isEmpty() || appTypeField.getText().isEmpty() || appLocationField.getText().isEmpty() ||
+                appStartDatePicker.getValue() == null || appEndDatePicker.getValue() == null || appStartTimeField.getText().isEmpty()||
+                appEndTimeField.getText().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Please fill out all required fields.");
+            alert.showAndWait();
+            return;
+        }
+        // Check if the user input is valid
         if (appValidationCheck(appCustomerIdCombo, appStartDatePicker, appStartTimeField, appEndDatePicker, appEndTimeField)) {
             return;
         }
+        // Combine the user input into a LocalDateTime for the start and end of the appointment
+        LocalDateTime startLocalDateTime = LocalDateTime.of(appStartDatePicker.getValue(), LocalTime.parse(appStartTimeField.getText()));
+        LocalDateTime endLocalDateTime = LocalDateTime.of(appEndDatePicker.getValue(), LocalTime.parse(appEndTimeField.getText()));
+        // Get the system's zone id and set user an appointment's start and end times to the system's zone
+        System.out.println("StartTimeUTC: " + startLocalDateTime + "\n");
+        System.out.println("EndTimeUTC: " + endLocalDateTime + "\n");
         AppointmentsDAO.addAppointment(userId ,appCustomerIdCombo, appContactCombo, appTitleField, appDescriptionField,
-                appTypeField, appLocationField, appStartDatePicker, appEndDatePicker, appStartTimeField, appEndTimeField);
+                appTypeField, appLocationField, startLocalDateTime, endLocalDateTime);
         updateAppsAll();
         updateAppsWeekly();
         updateAppsMonthly();

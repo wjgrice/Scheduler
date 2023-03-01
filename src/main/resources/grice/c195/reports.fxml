@@ -90,7 +90,7 @@
                </Label>
                 </AnchorPane>
             </Tab>
-            <Tab text="Billing">
+            <Tab text="Future Billing">
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                     <ComboBox fx:id="billingFilterCombo" layoutX="15.0" layoutY="42.0" onAction="#billingFilter" prefWidth="150.0" />
                     <Label layoutX="16.0" layoutY="23.0" prefHeight="17.0" prefWidth="120.0" text="Time Period">
@@ -117,7 +117,7 @@
                      <Font size="14.0" />
                   </font>
                </Label>
-               <Label layoutX="435.0" layoutY="33.0" prefHeight="20.0" prefWidth="444.0" text="Billing Reports: Select a period to see total minutes">
+               <Label layoutX="377.0" layoutY="33.0" prefHeight="20.0" prefWidth="502.0" text="Billing Reports for Upcoming Appointments: Select a period to see total minutes">
                   <font>
                      <Font size="14.0" />
                   </font>

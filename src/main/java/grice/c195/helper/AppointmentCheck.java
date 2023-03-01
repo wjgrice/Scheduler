@@ -8,20 +8,22 @@ import javafx.scene.control.TextArea;
 import java.time.LocalDateTime;
 
 /**
- * Provides an alert when there is an appointment within 15 minutes of the user’s log-in.
+ * Updates the Notes: area when there is an appointment within 15 minutes of the user’s log-in.
  * A custom message is displayed in the user interface and include the appointment ID, date, and time.
  * If the user does not have any appointments within 15 minutes of logging in, display a custom message in the
  * user interface indicating there are no upcoming appointments.
  */
 public class AppointmentCheck {
-    public static void checkForAppointments(TextArea appNotesArea) {
+    public static boolean checkForAppointments(TextArea appNotesArea) {
         appNotesArea.setText("Upcoming Appointments: ");
         appNotesArea.setStyle("-fx-font-weight: bold; -fx-text-fill: red;");
-        ObservableList<Appointment> appointmentList = AppointmentsDAO.getAppointments("all");
+        ObservableList<Appointment> appointmentList = AppointmentsDAO.getAppointments();
         boolean upcomingAppointmentsFound = false;
         for (Appointment appointment : appointmentList) {
-            LocalDateTime appStart = appointment.getLocalStartTime();
-            if (appStart.isBefore(LocalDateTime.now().plusMinutes(15)) && appStart.isAfter(LocalDateTime.now().minusMinutes(15))) {
+            LocalDateTime appStart = appointment.getStart();
+            LocalDateTime windowStart = LocalDateTime.now();
+            LocalDateTime windowEnd = LocalDateTime.now().plusMinutes(15);
+            if (appStart.isAfter(windowStart) && appStart.isBefore(windowEnd)) {
                 appNotesArea.appendText(
                         "\nAppointment ID: " + appointment.getAppointmentId() +  "\n" +
                                 "Appointment Date: " + appStart.toLocalDate() +  "\n" +
@@ -33,6 +35,8 @@ public class AppointmentCheck {
         if (!upcomingAppointmentsFound) {
             appNotesArea.setStyle("-fx-font-weight: bold; -fx-text-fill: green;");
             appNotesArea.appendText("\n\nNone.");
+            return false;
         }
+    return true;
     }
 }
